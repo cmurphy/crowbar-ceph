@@ -143,7 +143,10 @@ class CephService < PacemakerServiceObject
       n.intended_role == "controller" or osd_nodes.include? n
     end.first
     if mds_node.nil?
-      mds_node = select_nodes_for_role(nodes, "ceph-mds", "controller").first
+      mds_node = select_nodes_for_role(nodes, "ceph-mds", "controller")
+      mds_node = mds_node.select do |n|
+        CrowbarPacemakerHelper.is_cluster_founder?(n)
+      end.first
       @logger.debug("Not enought nodes: putting ceph-mds on controller node (unsupported scenario)")
     end
 
