@@ -120,10 +120,11 @@ class CephService < PacemakerServiceObject
 
     osd_nodes = select_nodes_for_role(nodes, "ceph-osd", "storage")
     if osd_nodes.size < 2
-      osd_nodes_controller = select_nodes_for_role(nodes, "ceph-osd", "controller")
       osd_nodes_all = select_nodes_for_role(nodes, "ceph-osd")
       # avoid controllers if possible (ceph should not be used with openstack roles)
-      osd_nodes_no_controller = osd_nodes_all - osd_nodes_controller
+      osd_nodes_no_controller = osd_nodes_all.reject do |n|
+        n.intended_role == "controller" || n.roles.include?("pacemaker-cluster-member")
+      end
       osd_nodes = [osd_nodes, osd_nodes_no_controller, osd_nodes_all].flatten.uniq(&:name)
       osd_nodes = osd_nodes.take(2)
     end
@@ -132,7 +133,7 @@ class CephService < PacemakerServiceObject
 
     if mon_nodes.size < 3
       mon_nodes_more = select_nodes_for_role(nodes, "ceph-mon").reject do |n|
-        n.intended_role == "controller"
+        n.intended_role == "controller" || n.roles.include?("pacemaker-cluster-member")
       end
       mon_nodes = [mon_nodes, mon_nodes_more].flatten.uniq(&:name)
     end
